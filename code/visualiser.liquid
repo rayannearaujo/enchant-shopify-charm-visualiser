@@ -1,0 +1,718 @@
+{% comment %}
+  ENCHANT — CHARM VISUALISER
+  sections/visualiser.liquid
+
+  LÓGICA DE CHARMS:
+  Necklace →
+    - collection: charms-for-necklaces (todos single)
+    - collection: enchant-hoop-and-charm-collection → variante Single
+  Earrings & Hoops →
+    - collection: enchant-hoop-and-charm-collection → variante Pair
+{% endcomment %}
+
+{%- liquid
+  assign necklace_collection = collections['enchant-necklaces']
+  assign earring_collection  = collections['enchant-charm-pendant-earring-collection-nbsp']
+  assign charms_necklace_only = collections['charms-for-necklaces']
+  assign charms_hoop          = collections['enchant-hoop-and-charm-collection']
+-%}
+
+{% comment %} ── BASES ────────────────────────────────────────────────── {% endcomment %}
+<script id="ev-bases-data" type="application/json">
+[
+  {%- for product in necklace_collection.products -%}
+    {%- unless product.available -%}{%- continue -%}{%- endunless -%}
+    {%- assign vis_image = nil -%}
+    {%- for img in product.images -%}
+      {%- if img.alt contains '#visualiser' -%}{%- assign vis_image = img -%}{%- break -%}{%- endif -%}
+    {%- endfor -%}
+    {%- assign vis_image = vis_image | default: product.featured_image -%}
+    {%- assign base_variant = product.selected_or_first_available_variant -%}
+    {%- assign slots_raw = product.metafields.visualiser.slots | default: '' -%}
+    {%- if slots_raw == blank -%}{%- assign slots_raw = '[{"x":50,"y":75,"scale":150,"label":"Charm"}]' -%}{%- endif -%}
+    {"id":{{ product.id }},"handle":{{ product.handle | json }},"title":{{ product.title | json }},"type":"necklace","priceRaw":{{ base_variant.price }},"variantId":{{ base_variant.id }},"image":{{ vis_image | image_url: width: 800 | json }},"slots":{{ slots_raw }}},
+  {%- endfor -%}
+
+  {%- for product in earring_collection.products -%}
+    {%- unless product.available -%}{%- continue -%}{%- endunless -%}
+    {%- assign vis_image = nil -%}
+    {%- for img in product.images -%}
+      {%- if img.alt contains '#visualiser' -%}{%- assign vis_image = img -%}{%- break -%}{%- endif -%}
+    {%- endfor -%}
+    {%- assign vis_image = vis_image | default: product.featured_image -%}
+    {%- assign base_variant = product.selected_or_first_available_variant -%}
+    {%- assign base_type = 'earring' -%}
+    {%- for tag in product.tags -%}
+      {%- if tag contains 'visualiser-type:' -%}{%- assign base_type = tag | remove: 'visualiser-type:' | downcase | strip -%}{%- endif -%}
+    {%- endfor -%}
+    {%- assign slots_raw = product.metafields.visualiser.slots | default: '' -%}
+    {%- if slots_raw == blank -%}{%- assign slots_raw = '[{"x":50,"y":51,"scale":390,"mx":50,"my":47,"ms":376,"label":"Charm"}]' -%}{%- endif -%}
+    {"id":{{ product.id }},"handle":{{ product.handle | json }},"title":{{ product.title | json }},"type":{{ base_type | json }},"priceRaw":{{ base_variant.price }},"variantId":{{ base_variant.id }},"image":{{ vis_image | image_url: width: 800 | json }},"slots":{{ slots_raw }}}{% unless forloop.last %},{% endunless %}
+  {%- endfor -%}
+]
+</script>
+
+{% comment %} ── CHARMS NECKLACE ONLY (charms-for-necklaces — todos single) ── {% endcomment %}
+<script id="ev-charms-necklace-only" type="application/json">
+[
+  {%- for product in charms_necklace_only.products -%}
+    {%- unless product.available -%}{%- continue -%}{%- endunless -%}
+    {%- assign vis_img = nil -%}
+    {%- for img in product.images -%}
+      {%- if img.alt contains '#visualiser' -%}{%- assign vis_img = img -%}{%- break -%}{%- endif -%}
+    {%- endfor -%}
+    {%- assign vis_img = vis_img | default: product.featured_image -%}
+    {%- assign v = product.selected_or_first_available_variant -%}
+    {%- assign charm_cat = 'Other' -%}
+    {%- for tag in product.tags -%}
+      {%- if tag contains 'cat:' -%}{%- assign charm_cat = tag | remove: 'cat:' | strip -%}{%- break -%}{%- endif -%}
+    {%- endfor -%}
+    {"id":{{ product.id }},"handle":{{ product.handle | json }},"title":{{ product.title | json }},"category":{{ charm_cat | json }},"overlayImage":{{ vis_img | image_url: width: 400 | json }},"cardImage":{{ product.featured_image | image_url: width: 300 | json }},"variantId":{{ v.id }},"price":{{ v.price }},"variantType":"single"}{% unless forloop.last %},{% endunless %}
+  {%- endfor -%}
+]
+</script>
+
+{% comment %} ── CHARMS HOOP (enchant-hoop-and-charm-collection — tem Single e Pair como variantes) ── {% endcomment %}
+<script id="ev-charms-hoop" type="application/json">
+[
+  {%- for product in charms_hoop.products -%}
+    {%- unless product.available -%}{%- continue -%}{%- endunless -%}
+    {%- assign vis_img = nil -%}
+    {%- for img in product.images -%}
+      {%- if img.alt contains '#visualiser' -%}{%- assign vis_img = img -%}{%- break -%}{%- endif -%}
+    {%- endfor -%}
+    {%- assign vis_img = vis_img | default: product.featured_image -%}
+    {%- assign single_variant = nil -%}
+    {%- assign pair_variant   = nil -%}
+    {%- assign single_img     = nil -%}
+    {%- assign pair_img       = nil -%}
+    {%- for variant in product.variants -%}
+      {%- assign vt = variant.title | downcase -%}
+      {%- if vt contains 'pair' -%}
+        {%- assign pair_variant = variant -%}
+        {%- assign pair_img = variant.image | default: product.featured_image -%}
+      {%- elsif vt contains 'single' -%}
+        {%- assign single_variant = variant -%}
+        {%- assign single_img = variant.image | default: product.featured_image -%}
+      {%- endif -%}
+    {%- endfor -%}
+    {%- comment -%} Produto sem variantes Single/Pair: usa o disponível para ambos {%- endcomment -%}
+    {%- if single_variant == nil and pair_variant == nil -%}
+      {%- assign single_variant = product.selected_or_first_available_variant -%}
+      {%- assign pair_variant   = single_variant -%}
+      {%- assign single_img     = product.featured_image -%}
+      {%- assign pair_img       = product.featured_image -%}
+    {%- endif -%}
+    {%- assign charm_cat = 'Other' -%}
+    {%- for tag in product.tags -%}
+      {%- if tag contains 'cat:' -%}{%- assign charm_cat = tag | remove: 'cat:' | strip -%}{%- break -%}{%- endif -%}
+    {%- endfor -%}
+    {
+      "id":              {{ product.id | json }},
+      "handle":          {{ product.handle | json }},
+      "title":           {{ product.title | json }},
+      "category":        {{ charm_cat | json }},
+      "overlayImage":    {{ vis_img | image_url: width: 400 | json }},
+      "singleVariantId": {{ single_variant.id | default: 0 }},
+      "singlePrice":     {{ single_variant.price | default: 0 }},
+      "singleImage":     {{ single_img | image_url: width: 300 | json }},
+      "pairVariantId":   {{ pair_variant.id | default: 0 }},
+      "pairPrice":       {{ pair_variant.price | default: 0 }},
+      "pairImage":       {{ pair_img | image_url: width: 300 | json }}
+    }{% unless forloop.last %},{% endunless %}
+  {%- endfor -%}
+]
+</script>
+
+{% comment %} ── HTML ─────────────────────────────────────────────────── {% endcomment %}
+<div class="ev-page">
+  <div class="ev-hero">
+    <h1 class="ev-hero__title">{{ section.settings.title | default: 'Build Your Own' }}</h1>
+    <p class="ev-hero__sub">{{ section.settings.subtitle | default: 'Choose a base · Add a charm · Checkout' }}</p>
+  </div>
+
+  <div class="ev-layout">
+
+    <!-- SIDEBAR (esquerda no desktop, antes do canvas no mobile) -->
+    <div class="ev-sidebar">
+
+      <!-- STEP 1: Tipo -->
+      <div class="ev-step">
+        <div class="ev-step__head"><span class="ev-step__num">1</span><span class="ev-step__lbl">Choose a type</span></div>
+        <div class="ev-type-row">
+          <button class="ev-type-btn" data-type="necklace">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 3C7 3 3 7 3 12s4 9 9 9 9-4 9-9"/><circle cx="12" cy="19" r="2"/></svg>
+            Necklace
+          </button>
+          <button class="ev-type-btn" data-type="earring">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="5" r="2"/><path d="M12 7v6l-2 4h4l-2-4V7"/></svg>
+            Earrings &amp; Hoops
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Base -->
+      <div class="ev-step" id="ev-step-base" style="display:none;">
+        <div class="ev-step__head"><span class="ev-step__num">2</span><span class="ev-step__lbl">Choose your base</span></div>
+        <div class="ev-base-grid" id="ev-base-grid"></div>
+      </div>
+
+      <!-- STEP 3: Slot -->
+      <div class="ev-step" id="ev-step-slot" style="display:none;">
+        <div class="ev-step__head"><span class="ev-step__num">3</span><span class="ev-step__lbl">Select a charm slot</span></div>
+        <div class="ev-slot-row" id="ev-slot-row"></div>
+      </div>
+
+      <!-- STEP 4: Charm -->
+      <div class="ev-step ev-step--charms" id="ev-step-charm" style="display:none;">
+        <div class="ev-step__head"><span class="ev-step__num">3</span><span class="ev-step__lbl">Choose a charm</span></div>
+        <div class="ev-filter-row" id="ev-filter-row"></div>
+        <div class="ev-charm-grid" id="ev-charm-grid" role="list"></div>
+      </div>
+
+    </div>
+
+    <!-- CANVAS (direita no desktop, depois da sidebar no mobile) -->
+    <div class="ev-canvas">
+      <p class="ev-canvas__label">Your creation</p>
+      <div class="ev-preview" id="ev-preview">
+        <div class="ev-preview__empty" id="ev-empty-state">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+            <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3" opacity=".3"/>
+            <path d="M32 22v20M22 32h20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity=".35"/>
+          </svg>
+          <p>Select a type to begin</p>
+        </div>
+        <div class="ev-preview__stage" id="ev-stage" style="display:none;">
+          <img id="ev-base-img" class="ev-base-img" src="" alt="" loading="eager">
+          <div class="ev-charm-layer" id="ev-charm-layer"></div>
+        </div>
+      </div>
+      <div class="ev-summary">
+        <div class="ev-summary__names">
+          <span id="ev-s-base">—</span>
+          <span id="ev-s-sep" style="display:none"> + </span>
+          <span id="ev-s-charm"></span>
+        </div>
+        <span class="ev-variant-badge" id="ev-variant-badge" style="display:none"></span>
+        <div class="ev-summary__price">Total: <strong id="ev-total">€0</strong></div>
+        <button class="ev-btn-cart" id="ev-btn-cart" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
+          Add to cart
+        </button>
+        <p class="ev-pair-note" id="ev-pair-note" style="display:none">* Preview shown for styling purposes. Charm proportions may vary slightly in the final piece.  Exact charm dimensions are provided in individual product descriptions.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="ev-overlay" id="ev-overlay"></div>
+<div class="ev-drawer" id="ev-drawer" role="dialog" aria-modal="true" aria-label="Your cart" aria-hidden="true">
+  <div class="ev-drawer__head">
+    <h2 class="ev-drawer__title">Your Look</h2>
+    <button class="ev-drawer__close" id="ev-drawer-close" aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="ev-drawer__body" id="ev-drawer-body"></div>
+  <div class="ev-drawer__foot">
+    <div class="ev-drawer__total-row"><span>Total</span><strong id="ev-drawer-total">€0</strong></div>
+    <button class="ev-btn-checkout" id="ev-btn-checkout" disabled>Proceed to checkout →</button>
+  </div>
+</div>
+
+<div class="ev-toast" id="ev-toast" role="status" aria-live="polite"></div>
+
+<style>
+.ev-page *,.ev-page *::before,.ev-page *::after{box-sizing:border-box}
+:root{--ev-gold:#c9a84c;--ev-gold-lt:#f0d878;--ev-gold-pale:#f8f0d8;--ev-cream:#faf7f0;--ev-cream-dk:#f2ece0;--ev-ink:#1a1510;--ev-ink-mid:#4a3f30;--ev-ink-soft:#8a7a60;--ev-ink-faint:#c0b098;--ev-border:#e4dace;--ev-white:#fff;--ev-radius:4px;--ev-shadow-lg:0 12px 48px rgba(26,21,16,.16);--ev-font-serif:'Cormorant Garamond',Georgia,serif;--ev-font-sans:'Jost',system-ui,sans-serif;--ev-tr:.2s ease}
+.ev-hero{text-align:center;padding:2.5rem 1rem 2rem;background:linear-gradient(180deg,var(--ev-white) 0%,var(--ev-cream) 100%);border-bottom:.5px solid var(--ev-border)}
+.ev-hero__title{font-family:var(--ev-font-serif);font-size:clamp(1.7rem,3.5vw,2.8rem);font-weight:300;letter-spacing:.05em;color:var(--ev-ink);margin-bottom:.35rem}
+.ev-hero__sub{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ev-ink-soft)}
+
+/* Layout: sidebar direita, canvas esquerda */
+.ev-layout{display:grid;grid-template-columns:1fr 360px;min-height:calc(100vh - 140px);align-items:start}
+
+/* SIDEBAR */
+.ev-sidebar{display:flex;flex-direction:column;background:var(--ev-cream);border-left:.5px solid var(--ev-border);order:2}
+
+/* CANVAS */
+.ev-canvas{padding:2rem 1.5rem;display:flex;flex-direction:column;align-items:center;background:var(--ev-white);position:sticky;top:0;height:100vh;overflow-y:auto;order:1}
+.ev-canvas__label{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ev-ink-faint);margin-bottom:1.25rem}
+
+.ev-step{padding:1.25rem 1.25rem 1.1rem;border-bottom:.5px solid var(--ev-border)}
+.ev-step--charms{flex:1;padding-bottom:2rem}
+.ev-step__head{display:flex;align-items:center;gap:.55rem;margin-bottom:.9rem}
+.ev-step__num{width:17px;height:17px;background:var(--ev-ink);color:var(--ev-cream);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;flex-shrink:0}
+.ev-step__lbl{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ev-ink-soft)}
+
+/* TYPE BUTTONS */
+.ev-type-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ev-type-btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:1rem .5rem;background:var(--ev-white);border:.5px solid var(--ev-border);border-radius:var(--ev-radius);cursor:pointer;font-family:var(--ev-font-sans);font-size:11px;letter-spacing:.1em;color:var(--ev-ink-soft);transition:all var(--ev-tr)}
+.ev-type-btn:hover{border-color:var(--ev-gold);color:var(--ev-ink);background:#fffdf6}
+.ev-type-btn--active{border-color:var(--ev-gold);background:#fffdf6;color:var(--ev-ink);box-shadow:0 0 0 1.5px var(--ev-gold-pale)}
+.ev-type-btn--active svg{stroke:var(--ev-gold)}
+
+/* BASE GRID */
+.ev-base-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ev-base-card{display:flex;flex-direction:column;align-items:center;gap:4px;padding:.65rem .5rem .6rem;background:var(--ev-white);border:.5px solid var(--ev-border);border-radius:var(--ev-radius);cursor:pointer;text-align:center;transition:border-color var(--ev-tr),background var(--ev-tr)}
+.ev-base-card:hover{border-color:var(--ev-gold);background:#fffdf6}
+.ev-base-card--active{border-color:var(--ev-gold);background:#fffdf6;box-shadow:0 0 0 1.5px var(--ev-gold-pale)}
+.ev-base-card__img-wrap{position:relative;margin-bottom:2px}
+.ev-base-card__img-wrap img{width:80px;height:64px;object-fit:contain;display:block}
+.ev-base-card__check{position:absolute;top:-5px;right:-5px;width:16px;height:16px;background:var(--ev-gold);color:var(--ev-ink);border-radius:50%;font-size:9px;font-weight:700;display:none;align-items:center;justify-content:center}
+.ev-base-card--active .ev-base-card__check{display:flex}
+.ev-base-card__name{font-size:10.5px;color:var(--ev-ink-mid);line-height:1.3}
+.ev-base-card__price{font-family:var(--ev-font-serif);font-size:13px;color:var(--ev-ink-soft)}
+
+/* SLOTS */
+.ev-slot-row{display:flex;gap:5px;flex-wrap:wrap}
+.ev-slot-btn{padding:4px 11px;background:var(--ev-white);border:.5px solid var(--ev-border);border-radius:2px;font-family:var(--ev-font-sans);font-size:10px;letter-spacing:.1em;color:var(--ev-ink-soft);cursor:pointer;transition:all var(--ev-tr)}
+.ev-slot-btn:hover:not(.ev-slot-btn--active){border-color:var(--ev-ink-soft);color:var(--ev-ink)}
+.ev-slot-btn--active{background:var(--ev-ink);border-color:var(--ev-ink);color:var(--ev-cream)}
+.ev-slot-btn--filled{border-color:var(--ev-gold);color:var(--ev-gold)}
+.ev-slot-btn--active.ev-slot-btn--filled{background:var(--ev-gold);border-color:var(--ev-gold);color:var(--ev-ink)}
+
+/* FILTERS */
+.ev-filter-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+.ev-filter-btn{padding:3px 9px;background:transparent;border:.5px solid var(--ev-border);border-radius:20px;font-family:var(--ev-font-sans);font-size:10px;color:var(--ev-ink-soft);cursor:pointer;white-space:nowrap;transition:all var(--ev-tr)}
+.ev-filter-btn:hover{border-color:var(--ev-ink-soft);color:var(--ev-ink)}
+.ev-filter-btn--active{background:var(--ev-ink);border-color:var(--ev-ink);color:var(--ev-cream)}
+
+/* CHARM GRID */
+.ev-charm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.ev-charm-card{background:var(--ev-white);border:.5px solid var(--ev-border);border-radius:3px;padding:7px 5px 6px;cursor:pointer;text-align:center;transition:border-color var(--ev-tr),background var(--ev-tr)}
+.ev-charm-card:hover,.ev-charm-card--active{border-color:var(--ev-gold);background:#fffdf6}
+.ev-charm-card__img-wrap{position:relative;margin-bottom:5px}
+.ev-charm-card__img-wrap img{width:60px;height:60px;object-fit:contain;display:block;margin:0 auto;filter:drop-shadow(0 1px 3px rgba(0,0,0,.1))}
+.ev-charm-card__check{position:absolute;top:-4px;right:-4px;width:14px;height:14px;background:var(--ev-gold);color:var(--ev-ink);border-radius:50%;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.ev-charm-card__name{display:-webkit-box;font-size:9.5px;color:var(--ev-ink-mid);line-height:1.25;margin-bottom:3px;overflow:hidden;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ev-charm-card__price{display:block;font-family:var(--ev-font-serif);font-size:12px;color:var(--ev-ink-soft)}
+
+/* PREVIEW */
+.ev-preview{flex:1;display:flex;align-items:center;justify-content:center;width:100%;max-width:420px}
+.ev-preview__empty{display:flex;flex-direction:column;align-items:center;gap:.9rem;color:var(--ev-ink-faint)}
+.ev-preview__empty p{font-size:12px;letter-spacing:.06em;font-style:italic}
+.ev-preview__stage{position:relative;width:100%;max-width:400px}
+.ev-base-img{display:block;width:100%;height:auto;border-radius:var(--ev-radius);user-select:none}
+.ev-charm-layer{position:absolute;inset:0;pointer-events:none}
+.ev-spot{position:absolute;pointer-events:all;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;transition:transform var(--ev-tr)}
+.ev-spot--empty{border:1.5px dashed var(--ev-ink-faint);background:rgba(255,255,255,.45);backdrop-filter:blur(3px);cursor:pointer}
+.ev-spot--empty:hover,.ev-spot--active{border-color:var(--ev-gold);background:rgba(201,168,76,.1);transform:translate(-50%,-50%) scale(1.08)!important}
+.ev-spot__plus{font-size:1.1rem;color:var(--ev-ink-faint);line-height:1}
+.ev-spot--active .ev-spot__plus{color:var(--ev-gold)}
+.ev-spot__lbl{font-size:8px;letter-spacing:.08em;color:var(--ev-ink-faint);margin-top:2px;white-space:nowrap}
+.ev-spot--filled{pointer-events:all;cursor:default}
+.ev-spot--filled:hover{transform:translate(-50%,-50%) scale(1.05)!important}
+.ev-spot__img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 2px 8px rgba(0,0,0,.2))}
+.ev-spot__remove{position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:var(--ev-ink-mid);border:none;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity var(--ev-tr);z-index:10}
+.ev-spot--filled:hover .ev-spot__remove{opacity:1}
+
+/* SUMMARY */
+.ev-summary{width:100%;border-top:.5px solid var(--ev-border);padding-top:1.1rem;margin-top:.75rem;text-align:center}
+.ev-summary__names{font-family:var(--ev-font-serif);font-size:1.05rem;color:var(--ev-ink);margin-bottom:.35rem;line-height:1.4}
+.ev-variant-badge{display:inline-block;font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:2px 9px;background:var(--ev-cream-dk);color:var(--ev-ink-soft);border-radius:20px;margin-bottom:.65rem}
+.ev-summary__price{font-size:11px;letter-spacing:.1em;color:var(--ev-ink-soft);margin-bottom:.9rem}
+.ev-summary__price strong{font-family:var(--ev-font-serif);font-size:1.35rem;color:var(--ev-ink);font-weight:400}
+.ev-pair-note{font-size:10px;color:var(--ev-ink-faint);letter-spacing:.04em;font-style:italic;margin-top:.5rem}
+.ev-btn-cart{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;padding:.85rem 1rem;background:var(--ev-ink);color:var(--ev-cream);border:none;border-radius:2px;font-family:var(--ev-font-sans);font-size:11px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:background var(--ev-tr)}
+.ev-btn-cart:hover:not(:disabled){background:var(--ev-ink-mid)}
+.ev-btn-cart:disabled{background:var(--ev-ink-faint);cursor:not-allowed}
+.ev-btn-checkout{display:flex;align-items:center;justify-content:center;width:100%;padding:.95rem 1rem;background:var(--ev-gold);color:var(--ev-ink);border:none;border-radius:2px;font-family:var(--ev-font-sans);font-size:11px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:background var(--ev-tr)}
+.ev-btn-checkout:hover:not(:disabled){background:var(--ev-gold-lt)}
+.ev-btn-checkout:disabled{background:var(--ev-ink-faint);cursor:not-allowed}
+
+/* DRAWER */
+.ev-overlay{display:none;position:fixed;inset:0;background:rgba(26,21,16,.4);z-index:200;backdrop-filter:blur(2px)}
+.ev-overlay--open{display:block}
+.ev-drawer{position:fixed;top:0;right:0;width:380px;max-width:100%;height:100vh;background:var(--ev-white);z-index:201;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);box-shadow:var(--ev-shadow-lg)}
+.ev-drawer--open{transform:translateX(0)}
+.ev-drawer__head{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem 1rem;border-bottom:.5px solid var(--ev-border)}
+.ev-drawer__title{font-family:var(--ev-font-serif);font-size:1.25rem;font-weight:400;letter-spacing:.05em}
+.ev-drawer__close{background:none;border:none;cursor:pointer;color:var(--ev-ink-soft);display:flex;align-items:center;padding:4px;border-radius:2px}
+.ev-drawer__body{flex:1;overflow-y:auto;padding:1rem 1.25rem}
+.ev-drawer__item{display:flex;gap:.9rem;padding:.8rem 0;border-bottom:.5px solid var(--ev-border)}
+.ev-drawer__item:last-child{border-bottom:none}
+.ev-drawer__item-img{width:58px;height:58px;object-fit:contain;border:.5px solid var(--ev-border);border-radius:3px;padding:4px;flex-shrink:0}
+.ev-drawer__item-info{display:flex;flex-direction:column;gap:2px}
+.ev-drawer__item-name{font-size:12px;color:var(--ev-ink);line-height:1.3}
+.ev-drawer__item-var{font-size:10px;color:var(--ev-ink-soft);letter-spacing:.06em}
+.ev-drawer__item-price{font-family:var(--ev-font-serif);font-size:1rem;color:var(--ev-ink)}
+.ev-drawer__empty{text-align:center;padding:3rem 1rem;color:var(--ev-ink-faint);font-style:italic;font-size:13px}
+.ev-drawer__foot{padding:1.1rem 1.25rem;border-top:.5px solid var(--ev-border);background:var(--ev-cream)}
+.ev-drawer__total-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.85rem;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ev-ink-soft)}
+.ev-drawer__total-row strong{font-family:var(--ev-font-serif);font-size:1.5rem;color:var(--ev-ink);font-weight:400}
+.ev-hint{font-size:11px;color:var(--ev-ink-faint);font-style:italic;letter-spacing:.04em}
+.ev-toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(60px);background:var(--ev-ink);color:var(--ev-cream);padding:.6rem 1.5rem;border-radius:30px;font-family:var(--ev-font-sans);font-size:12px;letter-spacing:.08em;z-index:500;opacity:0;pointer-events:none;transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;white-space:nowrap}
+.ev-toast--show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* RESPONSIVE — mobile: sidebar antes do canvas */
+@media(max-width:860px){
+  .ev-layout{grid-template-columns:1fr;grid-template-rows:auto auto}
+  .ev-sidebar{order:1;height:auto;border-right:none;border-bottom:.5px solid var(--ev-border)}
+  .ev-canvas{order:2;position:static;height:auto;padding:1.5rem 1rem}
+  .ev-preview__stage{max-width:100%}
+  .ev-charm-grid{grid-template-columns:repeat(4,1fr)}
+  .ev-drawer{width:100%}
+  .ev-spot__remove{opacity:1}
+}
+}
+@media(max-width:480px){
+  .ev-charm-grid{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+
+<script>
+(function(){
+'use strict';
+
+const BASES             = JSON.parse(document.getElementById('ev-bases-data')?.textContent||'[]');
+const CHARMS_NECKLACE   = JSON.parse(document.getElementById('ev-charms-necklace-only')?.textContent||'[]');
+const CHARMS_HOOP       = JSON.parse(document.getElementById('ev-charms-hoop')?.textContent||'[]');
+
+const S = { type:null, base:null, slots:[], activeSlot:0, filter:'All', baseAdded:false, addedCharms:[], buildId:null };
+window._EV = S;
+const $ = id => document.getElementById(id);
+const D = {
+  emptyState:$('ev-empty-state'),stage:$('ev-stage'),baseImg:$('ev-base-img'),
+  charmLayer:$('ev-charm-layer'),baseGrid:$('ev-base-grid'),slotRow:$('ev-slot-row'),
+  filterRow:$('ev-filter-row'),charmGrid:$('ev-charm-grid'),
+  sBase:$('ev-s-base'),sSep:$('ev-s-sep'),sCharm:$('ev-s-charm'),
+  variantBadge:$('ev-variant-badge'),total:$('ev-total'),btnCart:$('ev-btn-cart'),
+  pairNote:$('ev-pair-note'),overlay:$('ev-overlay'),drawer:$('ev-drawer'),
+  drawerClose:$('ev-drawer-close'),drawerBody:$('ev-drawer-body'),
+  drawerTotal:$('ev-drawer-total'),btnCheckout:$('ev-btn-checkout'),toast:$('ev-toast'),
+  stepBase:$('ev-step-base'),stepSlot:$('ev-step-slot'),stepCharm:$('ev-step-charm'),
+};
+
+function isPair(base){ return base&&(base.type==='hoop'||base.type==='earring') }
+function money(v){ const n=v/100; return '€'+(n%1===0?n.toFixed(0):n.toFixed(2)) }
+
+let _tt;
+function toast(m,ms=2800){ D.toast.textContent=m; D.toast.classList.add('ev-toast--show'); clearTimeout(_tt); _tt=setTimeout(()=>D.toast.classList.remove('ev-toast--show'),ms) }
+function parseSlots(b){ try{ return Array.isArray(b.slots)?b.slots:JSON.parse(b.slots||'[]') }catch(e){ return [] } }
+
+/* ── Charms para o tipo actual ── */
+function getCharms(){
+  if(S.type==='earring'){
+    /* Earrings: só hoop collection, só variante Pair */
+    return CHARMS_HOOP
+      .filter(c => c.pairVariantId && c.pairVariantId !== 0)
+      .map(c => ({
+        id:c.id, handle:c.handle, title:c.title, category:c.category,
+        overlayImage:c.overlayImage,
+        cardImage:c.pairImage||c.overlayImage,
+        variantId:c.pairVariantId,
+        price:c.pairPrice,
+        label:'Pair',
+      }));
+  } else {
+    /* Necklace: necklace-only (todos single) + hoop collection variante Single */
+    const fromNecklaceOnly = CHARMS_NECKLACE.map(c=>({
+      id:c.id, handle:c.handle, title:c.title, category:c.category,
+      overlayImage:c.overlayImage,
+      cardImage:c.cardImage||c.overlayImage,
+      variantId:c.variantId,
+      price:c.price,
+      label:'Single',
+    }));
+    const fromHoop = CHARMS_HOOP
+      .filter(c=>!c.title.toLowerCase().includes('pair'))
+      .map(c=>({
+        id:'hoop-'+c.id, handle:c.handle, title:c.title, category:c.category,
+        overlayImage:c.overlayImage,
+        cardImage:c.singleImage||c.overlayImage,
+        variantId:c.singleVariantId,
+        price:c.singlePrice,
+        label:'Single',
+      }));
+    return [...fromNecklaceOnly, ...fromHoop];
+  }
+}
+
+/* ── Categories ── */
+function getCategories(){
+  const charms = getCharms();
+  return ['All',...new Set(charms.map(c=>c.category).filter(Boolean).sort())];
+}
+
+/* ── RENDER TYPE BUTTONS ── */
+function renderTypeButtons(){
+  document.querySelectorAll('.ev-type-btn').forEach(btn=>{
+    btn.classList.toggle('ev-type-btn--active', btn.dataset.type===S.type);
+  });
+}
+
+/* ── RENDER BASE GRID ── */
+function renderBaseGrid(){
+  D.baseGrid.innerHTML='';
+  const filtered=BASES.filter(b=>S.type==='earring'?(b.type==='earring'||b.type==='hoop'):b.type==='necklace');
+  if(!filtered.length){ D.baseGrid.innerHTML='<p class="ev-hint">No products found.</p>'; return }
+  filtered.forEach(base=>{
+    const active=S.base?.id===base.id;
+    const btn=document.createElement('button');
+    btn.className='ev-base-card'+(active?' ev-base-card--active':'');
+    btn.innerHTML=`<div class="ev-base-card__img-wrap"><img src="${base.image}" alt="${base.title}" loading="lazy" width="110" height="90"><span class="ev-base-card__check" aria-hidden="true">✓</span></div><span class="ev-base-card__name">${base.title}</span><span class="ev-base-card__price">${money(base.priceRaw)}</span>`;
+    btn.addEventListener('click',()=>selectBase(base));
+    D.baseGrid.appendChild(btn);
+  });
+}
+
+/* ── RENDER CANVAS ── */
+function renderCanvas(){
+  if(!S.base){ D.emptyState.style.display='flex'; D.stage.style.display='none'; return }
+  D.emptyState.style.display='none'; D.stage.style.display='block';
+  D.baseImg.src=S.base.image; D.baseImg.alt=S.base.title;
+  renderCharmLayer();
+}
+
+/* ── RENDER CHARM LAYER ── */
+function renderCharmLayer(){
+  D.charmLayer.innerHTML=''; if(!S.base) return;
+  parseSlots(S.base).forEach((cfg,i)=>{
+    const placed=S.slots[i], active=S.activeSlot===i;
+const isMobile = window.innerWidth <= 860;
+const cx    = isMobile && cfg.mx != null ? cfg.mx : (cfg.x ?? 50);
+const cy    = isMobile && cfg.my != null ? cfg.my : (cfg.y ?? 75);
+const csize = isMobile && cfg.ms != null ? cfg.ms : (cfg.scale || 130);
+const size  = placed ? csize : Math.min(csize, 80);
+    const spot=document.createElement('div');
+    spot.className='ev-spot'+(placed?' ev-spot--filled':' ev-spot--empty')+(active&&!placed?' ev-spot--active':'');
+    spot.style.cssText=`left:${cx}%;top:${cy}%;width:${size}px;height:${size}px;transform:translate(-50%,-50%);`;
+    if(placed){
+      spot.innerHTML=`<img src="${placed.overlayImage||placed.cardImage}" alt="${placed.title}" class="ev-spot__img" loading="eager"><button class="ev-spot__remove" aria-label="Remove ${placed.title}"><svg width="9" height="9" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.8"><path d="M1 1l12 12M13 1L1 13"/></svg></button>`;
+      spot.querySelector('.ev-spot__remove').addEventListener('click',e=>{e.stopPropagation();removeCharm(i)});
+    } else {
+      spot.innerHTML=`<span class="ev-spot__plus" aria-hidden="true">+</span>${cfg.label?`<span class="ev-spot__lbl">${cfg.label}</span>`:''}`;
+      spot.addEventListener('click',()=>selectSlot(i));
+    }
+    D.charmLayer.appendChild(spot);
+  });
+}
+
+/* ── RENDER SLOT ROW ── */
+function renderSlotRow(){
+  D.slotRow.innerHTML=''; if(!S.base) return;
+  parseSlots(S.base).forEach((cfg,i)=>{
+    const filled=!!S.slots[i], active=S.activeSlot===i;
+    const btn=document.createElement('button');
+    btn.className='ev-slot-btn'+(active?' ev-slot-btn--active':'')+(filled?' ev-slot-btn--filled':'');
+    btn.textContent=(cfg.label||`Slot ${i+1}`)+(filled?' ✓':'');
+    btn.addEventListener('click',()=>selectSlot(i));
+    D.slotRow.appendChild(btn);
+  });
+}
+
+/* ── RENDER FILTERS ── */
+function renderFilters(){
+  D.filterRow.innerHTML='';
+  getCategories().forEach(cat=>{
+    const btn=document.createElement('button');
+    btn.className='ev-filter-btn'+(S.filter===cat?' ev-filter-btn--active':'');
+    btn.textContent=cat;
+    btn.addEventListener('click',()=>{ S.filter=cat; renderFilters(); renderCharmGrid() });
+    D.filterRow.appendChild(btn);
+  });
+}
+
+/* ── RENDER CHARM GRID ── */
+function renderCharmGrid(){
+  D.charmGrid.innerHTML=''; if(!S.type){ return }
+  let list=getCharms();
+  if(S.filter!=='All') list=list.filter(c=>c.category===S.filter);
+  if(!list.length){ D.charmGrid.innerHTML='<p class="ev-hint">No charms found.</p>'; return }
+  list.forEach(charm=>{
+    const inSlot=S.base&&S.slots[S.activeSlot]?.id===charm.id;
+    const card=document.createElement('div');
+    card.className='ev-charm-card'+(inSlot?' ev-charm-card--active':'');
+    card.setAttribute('role','listitem');
+    card.innerHTML=`<div class="ev-charm-card__img-wrap"><img src="${charm.cardImage||charm.overlayImage}" alt="${charm.title}" loading="lazy" width="72" height="72">${inSlot?'<span class="ev-charm-card__check" aria-hidden="true">✓</span>':''}</div><span class="ev-charm-card__name">${charm.title}</span><span class="ev-charm-card__price">${money(charm.price)}</span>`;
+    card.addEventListener('click',()=>pickCharm(charm));
+    D.charmGrid.appendChild(card);
+  });
+}
+
+/* ── SUMMARY ── */
+function updateSummary(){
+  if(!S.base){ D.sBase.textContent='—';D.sSep.style.display='none';D.sCharm.textContent='';D.variantBadge.style.display='none';D.total.textContent='€0';D.btnCart.disabled=true;D.pairNote.style.display='none';return }
+  const charmTotal=S.slots.reduce((s,sl)=>s+(sl?sl.price:0),0)
+  + S.addedCharms.reduce((s,c)=>s+c.price,0);
+  D.sBase.textContent=S.base.title;
+  D.total.textContent=money(S.base.priceRaw+charmTotal);
+  D.btnCart.disabled=false;
+  D.variantBadge.style.display='inline-block';
+  D.variantBadge.textContent=isPair(S.base)?'Charms: Pair':'Charms: Single';
+  D.pairNote.style.display=isPair(S.base)?'block':'none';
+  const filled=S.slots.filter(Boolean);
+  D.sSep.style.display=filled.length?'inline':'none';
+  D.sCharm.textContent=filled.map(s=>s.title).join(', ');
+}
+
+/* ── SHOW STEPS ── */
+function showSteps(){
+  D.stepBase.style.display=S.type?'block':'none';
+  D.stepSlot.style.display=(S.base&&!isPair(S.base))?'block':'none';
+  D.stepCharm.style.display=S.type?'block':'none';
+}
+
+/* ── INTERACTIONS ── */
+function selectType(type){
+  if(S.type!==type){ S.base=null;S.slots=[];S.activeSlot=0;S.filter='All';renderCanvas();updateSummary() }
+  S.type=type;
+  renderTypeButtons();renderBaseGrid();renderFilters();renderCharmGrid();showSteps();
+}
+
+function selectBase(base){
+  S.base=base; S.activeSlot=0;
+  S.slots=new Array(parseSlots(base).length).fill(null);
+  S.baseAdded=false;
+  S.addedCharms=[];
+  S.buildId=null;
+  renderBaseGrid();renderCanvas();renderSlotRow();renderCharmGrid();updateSummary();showSteps();
+}
+
+function selectSlot(i){ S.activeSlot=i;renderSlotRow();renderCharmLayer();renderCharmGrid() }
+
+function pickCharm(charm){
+  if(!S.base){ toast('Select a base piece first.');return }
+  S.slots[S.activeSlot]={ ...charm };
+  const next=S.slots.findIndex((s,i)=>i>S.activeSlot&&s===null);
+  if(next!==-1) S.activeSlot=next;
+  renderCharmLayer();renderSlotRow();renderCharmGrid();updateSummary();
+}
+
+function removeCharm(i){ S.slots[i]=null;S.activeSlot=i;renderCharmLayer();renderSlotRow();renderCharmGrid();updateSummary() }
+
+/* ── CART ── */
+function openCart(){ renderDrawer();D.overlay.classList.add('ev-overlay--open');D.drawer.classList.add('ev-drawer--open');D.drawer.setAttribute('aria-hidden','false');D.drawerClose.focus() }
+function closeCart(){ D.overlay.classList.remove('ev-overlay--open');D.drawer.classList.remove('ev-drawer--open');D.drawer.setAttribute('aria-hidden','true') }
+
+function buildCartItems(){
+  const items=[];if(!S.base)return items;
+  items.push({name:S.base.title,variant:'',priceRaw:S.base.priceRaw,image:S.base.image,variantId:S.base.variantId,role:'Base'});
+  S.slots.forEach((slot,i)=>{ if(!slot)return; items.push({name:slot.title,variant:slot.label,priceRaw:slot.price,image:slot.cardImage||slot.overlayImage,variantId:slot.variantId,role:`Charm (Slot ${i+1})`}) });
+  return items;
+}
+
+function renderDrawer(){
+  const items = [];
+  if(S.base) items.push({name:S.base.title,variant:'',priceRaw:S.base.priceRaw,image:S.base.image});
+  S.addedCharms.forEach(c=>items.push({name:c.title,variant:c.label,priceRaw:c.price,image:c.cardImage||c.overlayImage}));
+
+  const total = items.reduce((s,i)=>s+i.priceRaw,0);
+  D.drawerTotal.textContent = money(total);
+  D.btnCheckout.disabled = items.length===0;
+
+  if(!items.length){ D.drawerBody.innerHTML='<p class="ev-drawer__empty">Your cart is empty.</p>';return }
+  D.drawerBody.innerHTML=items.map(item=>`
+    <div class="ev-drawer__item">
+      <img src="${item.image}" alt="${item.name}" class="ev-drawer__item-img" loading="lazy" width="58" height="58">
+      <div class="ev-drawer__item-info">
+        <span class="ev-drawer__item-name">${item.name}</span>
+        ${item.variant?`<span class="ev-drawer__item-var">${item.variant}</span>`:''}
+        <span class="ev-drawer__item-price">${money(item.priceRaw)}</span>
+      </div>
+    </div>`).join('');
+}
+
+async function addToCart(){
+  if(!S.base) return;
+  D.btnCart.disabled=true; D.btnCart.textContent='Adding…';
+
+  const buildId = S.buildId || `ev-${Date.now()}`;
+  S.buildId = buildId;
+
+  const items = [];
+
+  // Adiciona a base só na primeira vez
+  if(!S.baseAdded){
+    items.push({
+      id: S.base.variantId,
+      quantity: 1,
+      properties: {
+        '_Build ID':   buildId,
+        '_Build Role': 'Base',
+      }
+    });
+  }
+
+  // Adiciona o charm actual
+  const currentCharm = S.slots.find(Boolean);
+  if(currentCharm){
+    items.push({
+      id: currentCharm.variantId,
+      quantity: 1,
+      properties: {
+        '_Build ID':   buildId,
+        '_Build Role': 'Charm',
+        '_Variant':    currentCharm.label,
+        '_Base':       S.base.title,
+      }
+    });
+  }
+
+  if(!items.length){ toast('Select a charm first.'); D.btnCart.disabled=false; return }
+
+  try{
+    const res=await fetch('/cart/add.js',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Accept:'application/json'},
+      body:JSON.stringify({items})
+    });
+    if(!res.ok){ const err=await res.json(); throw new Error(err.description||'Could not add to cart.') }
+
+    // Marca base como adicionada e guarda o charm
+    S.baseAdded = true;
+    if(currentCharm) S.addedCharms.push({...currentCharm});
+
+    // Limpa slot para novo charm
+    S.slots = new Array(S.slots.length).fill(null);
+    S.activeSlot = 0;
+
+    toast('Added! 🛍');
+    openCart();
+    fetch('/cart.js').then(r=>r.json()).then(cart=>{
+      document.querySelectorAll('[data-cart-count],.cart-count-bubble').forEach(el=>{el.textContent=cart.item_count})
+    }).catch(()=>{});
+    renderCharmLayer();
+    renderCharmGrid();
+    updateSummary();
+
+  }catch(err){ toast('Error: '+err.message) }
+  finally{
+    D.btnCart.disabled=false;
+    D.btnCart.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg> ${S.baseAdded?'Add another charm':'Add to cart'}`;
+  }
+}
+
+async function handleCheckout(){
+  D.btnCheckout.disabled=true; D.btnCheckout.textContent='Loading…';
+  try{ await addToCart(); window.location.href='/checkout' }
+  catch(e){ D.btnCheckout.disabled=false; D.btnCheckout.textContent='Proceed to checkout →' }
+}
+
+function initEvents(){
+  document.querySelectorAll('.ev-type-btn').forEach(btn=>btn.addEventListener('click',()=>selectType(btn.dataset.type)));
+  D.btnCart?.addEventListener('click',()=>{if(S.base)addToCart()});
+  D.btnCheckout?.addEventListener('click',handleCheckout);
+  D.drawerClose?.addEventListener('click',closeCart);
+  D.overlay?.addEventListener('click',closeCart);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&D.drawer?.classList.contains('ev-drawer--open'))closeCart()});
+}
+
+function init(){ showSteps();initEvents();console.log(`[Enchant Visualiser] Ready — ${BASES.length} bases`) }
+document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Charm Visualiser",
+  "settings": [
+    { "type": "text", "id": "title", "label": "Heading", "default": "Build Your Own" },
+    { "type": "text", "id": "subtitle", "label": "Subheading", "default": "Choose a base · Add a charm · Checkout" }
+  ],
+  "presets": [{ "name": "Charm Visualiser" }]
+}
+{% endschema %}
